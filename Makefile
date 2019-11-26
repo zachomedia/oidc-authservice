@@ -22,6 +22,9 @@ docker-build:
 docker-push:
 	docker push $(IMG):$(TAG)
 
+docs:
+	plantuml -tsvg -v -o $(REPO_PATH)/docs/media $(REPO_PATH)/docs/media/source/oidc_authservice_sequence_diagram.plantuml
+
 e2e: docker-build
 	# Start AuthService container
 	docker run -d --user=root --name=e2e-authservice-container\
@@ -50,3 +53,5 @@ e2e: docker-build
 	docker container rm e2e-authservice-container
 
 publish: docker-build docker-push
+
+.PHONY: all build docker-build docker-push docs e2e publish
