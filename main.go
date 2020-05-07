@@ -151,6 +151,10 @@ func main() {
 		}
 	}
 
+	/////////////////////////////////
+	// Resume setup asynchronously //
+	/////////////////////////////////
+
 	// OIDC Discovery
 	var provider *oidc.Provider
 	ctx := setTLSContext(context.Background(), caBundle)
