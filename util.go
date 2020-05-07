@@ -37,6 +37,18 @@ func returnStatus(w http.ResponseWriter, statusCode int, errorMsg string) {
 	w.Write([]byte(errorMsg))
 }
 
+func getEnvsFromPrefix(prefix string) map[string]string {
+	res := map[string]string{}
+	for _, env := range os.Environ() {
+		parts := strings.Split(env, "=")
+		key, value := parts[0], parts[1]
+		if strings.HasPrefix(key, prefix) {
+			res[strings.TrimPrefix(key, prefix)] = value
+		}
+	}
+	return res
+}
+
 func getEnvOrDefault(key, fallback string) string {
 	value, exists := os.LookupEnv(key)
 	if !exists {
@@ -103,6 +115,14 @@ func setTLSContext(ctx context.Context, caBundle []byte) context.Context {
 	}
 	tlsConf := &http.Client{Transport: tr}
 	return context.WithValue(ctx, oauth2.HTTPClient, tlsConf)
+}
+
+func mustParseURL(rawURL string) *url.URL {
+	url, err := url.Parse(rawURL)
+	if err != nil {
+		panic(err)
+	}
+	return url
 }
 
 func doRequest(ctx context.Context, req *http.Request) (*http.Response, error) {

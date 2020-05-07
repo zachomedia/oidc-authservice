@@ -27,6 +27,7 @@ const (
 	defaultHealthServerPort  = "8081"
 	defaultServerHostname    = ""
 	defaultServerPort        = "8080"
+	defaultWebServerPort     = "8082"
 	defaultUserIDHeader      = "kubeflow-userid"
 	defaultUserIDTokenHeader = "kubeflow-userid-token"
 	defaultUserIDPrefix      = ""
@@ -38,11 +39,13 @@ const (
 const secureCookieKeyPair = "notNeededBecauseCookieValueIsRandom"
 
 type server struct {
-	provider             *oidc.Provider
-	oauth2Config         *oauth2.Config
-	store                sessions.Store
-	staticDestination    string
-	sessionMaxAgeSeconds int
+	provider               *oidc.Provider
+	oauth2Config           *oauth2.Config
+	store                  sessions.Store
+	afterLoginRedirectURL  string
+	homepageURL            string
+	afterLogoutRedirectURL string
+	sessionMaxAgeSeconds   int
 	userIDOpts
 	caBundle []byte
 }
@@ -76,9 +79,10 @@ func main() {
 	clientID := getEnvOrDie("CLIENT_ID")
 	clientSecret := getEnvOrDie("CLIENT_SECRET")
 	redirectURL := getURLEnvOrDie("REDIRECT_URL")
-	staticDestination := os.Getenv("STATIC_DESTINATION_URL")
-	whitelist := clean(strings.Split(os.Getenv("SKIP_AUTH_URI"), " "))
+	afterLoginRedirectURL := getEnvOrDefault("AFTER_LOGIN_URL",
+		os.Getenv("STATIC_DESTINATION_URL"))
 	// UserID Options
+	whitelist := clean(strings.Split(os.Getenv("SKIP_AUTH_URI"), " "))
 	userIDHeader := getEnvOrDefault("USERID_HEADER", defaultUserIDHeader)
 	userIDTokenHeader := getEnvOrDefault("USERID_TOKEN_HEADER", defaultUserIDTokenHeader)
 	userIDPrefix := getEnvOrDefault("USERID_PREFIX", defaultUserIDPrefix)
@@ -86,6 +90,16 @@ func main() {
 	// Server
 	hostname := getEnvOrDefault("SERVER_HOSTNAME", defaultServerHostname)
 	port := getEnvOrDefault("SERVER_PORT", defaultServerPort)
+	homepageURL := getEnvOrDefault("HOMEPAGE_URL", LandingPath)
+	afterLogoutRedirectURL := getEnvOrDefault("AFTER_LOGOUT_URL", AfterLogoutPath)
+
+	// Web Server
+	webServerPort := getEnvOrDefault("WEB_SERVER_PORT", defaultWebServerPort)
+	webServerTemplatePaths := clean(strings.Split(os.Getenv("TEMPLATE_PATH"), ","))
+	webServerTheme := getEnvOrDefault("WEB_SERVER_THEME", "ekf")
+	webServerClientName := getEnvOrDefault("WEB_SERVER_CLIENT_NAME", "AuthService")
+	webServerTemplateValues := getEnvsFromPrefix("TEMPLATE_CONTEXT_")
+
 	// Store
 	storePath := getEnvOrDie("STORE_PATH")
 	// Sessions
@@ -101,17 +115,35 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/login/oidc", s.callback).Methods(http.MethodGet)
 	router.HandleFunc("/logout", s.logout).Methods(http.MethodGet)
-	router.PathPrefix("/").HandlerFunc(s.authenticate)
+
+	router.PathPrefix("/").Handler(whitelistMiddleware(whitelist, isReady)(http.HandlerFunc(s.authenticate)))
 
 	// Start server
-	log.Infof("Starting web server at %v:%v", hostname, port)
+	log.Infof("Starting server at %v:%v", hostname, port)
 	stopCh := make(chan struct{})
 	go func(stopCh chan struct{}) {
-		log.Fatal(http.ListenAndServe(hostname+":"+port, handlers.CORS()(whitelistMiddleware(whitelist, isReady)(router))))
+		log.Fatal(http.ListenAndServe(hostname+":"+port, handlers.CORS()(router)))
 		close(stopCh)
 	}(stopCh)
 
-	// Read CA bundle
+	// Start web server
+	webServer := WebServer{
+		TemplatePaths: append([]string{"web/templates/default"}, webServerTemplatePaths...),
+		ProviderURL:   providerURL.String(),
+		ClientName:    webServerClientName,
+		Theme:         webServerTheme,
+		Frontend:      webServerTemplateValues,
+	}
+	log.Infof("Starting web server at %v:%v", hostname, webServerPort)
+	go func() {
+		log.Fatal(webServer.Start(hostname + ":" + webServerPort))
+	}()
+
+	/////////////////////////////////
+	// Resume setup asynchronously //
+	/////////////////////////////////
+
+	// Read custom CA bundle
 	var caBundle []byte
 	var err error
 	if caBundlePath != "" {
@@ -120,10 +152,6 @@ func main() {
 			log.Fatalf("Could not read CA bundle path %s: %v", caBundlePath, err)
 		}
 	}
-
-	/////////////////////////////////
-	// Resume setup asynchronously //
-	/////////////////////////////////
 
 	// OIDC Discovery
 	var provider *oidc.Provider
@@ -177,8 +205,10 @@ func main() {
 			Scopes:       oidcScopes,
 		},
 		// TODO: Add support for Redis
-		store:             store,
-		staticDestination: staticDestination,
+		store:                  store,
+		afterLoginRedirectURL:  afterLoginRedirectURL,
+		homepageURL:            homepageURL,
+		afterLogoutRedirectURL: afterLogoutRedirectURL,
 		userIDOpts: userIDOpts{
 			header:      userIDHeader,
 			tokenHeader: userIDTokenHeader,

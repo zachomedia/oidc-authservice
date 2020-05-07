@@ -1,0 +1,12 @@
+.main {
+  background-color: #a1c3ff;
+}
+
+.button-wrapper {
+  text-align: right;
+}
+
+.button {
+  border-radius: 4px;
+  background-color: #0028aa;
+}
