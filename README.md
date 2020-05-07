@@ -33,11 +33,20 @@ Following environment variables are used by the software.
 * **CLIENT_SECRET** Client secret for your application.
 
 **Optional**
+* **CLIENT_NAME** A human-readable name for the client. Used in static pages. Defaults to `AuthService`.
 * **SERVER_HOSTNAME** Hostname to listen for requests. Defaults to all IPv4/6 interfaces (0.0.0.0, ::).
 * **SERVER_PORT** Port to listen for requests. Default is 8080.
 * **SKIP_AUTH_URI** Space separated whitelist of URIs like "/info /health" to bypass authorization. Contains nothing by default.
   **WARNING:** Make sure that the path in SKIP_AUTH_URI matches the path in the VirtualService definition of your Service Mesh. If it doesn't (eg you whitelist /dex and you match /dex/ in the VirtualService) you could leave resources exposed! (in this example, the /dex path is exposed)
 * **CA_BUNDLE** Path to file containing custom CA certificates to use when connecting to an OIDC provider that uses self-signed certificates.
+* **HOMEPAGE_URL** Homepage to use when user logs out or accesses the callback URL without any query parameters.
+  The authservice provides a default homepage, users can specify their own.
+* **AFTER_LOGOUT_URL** URL to redirect the user to after they log out.
+
+**Platform-Specific**
+* **STATIC_PAGE_GITLAB_LOGOUT_URL** URL to use for GitLab's static `after_logout` page.
+  The page presents a button pointing to the GitLab logout URL. Needed because
+  GitLab doesn't provide a standardized way to do RP-initiated logout.
 
 OIDC-AuthService stores sessions and other state in a local file using BoltDB.
 Other stores will be added soon.

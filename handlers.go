@@ -88,8 +88,8 @@ func (s *server) callback(w http.ResponseWriter, r *http.Request) {
 	// Get authorization code from authorization response.
 	var authCode = r.FormValue("code")
 	if len(authCode) == 0 {
-		logger.Error("Missing url parameter: code")
-		returnStatus(w, http.StatusBadRequest, "Missing url parameter: code")
+		logger.Warnf("Missing url parameter: code. Redirecting to homepage `%s'.", s.homepageURL)
+		http.Redirect(w, r, s.homepageURL, http.StatusFound)
 		return
 	}
 
@@ -183,12 +183,12 @@ func (s *server) logout(w http.ResponseWriter, r *http.Request) {
 	session, err := s.store.Get(r, userSessionCookie)
 	if err != nil {
 		logger.Errorf("Couldn't get user session: %v", err)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, s.afterLogoutRedirectURL, http.StatusSeeOther)
 		return
 	}
 	if session.IsNew {
 		logger.Warn("Request doesn't have a valid session.")
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, s.afterLogoutRedirectURL, http.StatusSeeOther)
 		return
 	}
 
@@ -220,13 +220,13 @@ func (s *server) logout(w http.ResponseWriter, r *http.Request) {
 		logger.Errorf("Couldn't delete user session: %v", err)
 	}
 	logger.Info("Successful logout.")
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, s.afterLogoutRedirectURL, http.StatusSeeOther)
 }
 
 // readiness is the handler that checks if the authservice is ready for serving
 // requests.
 // Currently, it checks if the provider is nil, meaning that the setup hasn't finished yet.
-func readiness(isReady *abool.AtomicBool) func(w http.ResponseWriter, r *http.Request) {
+func readiness(isReady *abool.AtomicBool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		code := http.StatusOK
 		if !isReady.IsSet() {
@@ -236,6 +236,15 @@ func readiness(isReady *abool.AtomicBool) func(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// whitelistMiddleware is a middleware that
+// - Allows all requests that match the whitelist
+// - If the server is ready, forwards requests to be evaluated further
+// - If the server is NOT ready, denies requests not permitted by the whitelist
+//
+// This is necessary because in some topologies, the OIDC Provider and the AuthService
+// live are in the same cluster and requests pass through the AuthService.
+// Allowing the whitelisted requests before OIDC is configured is necessary for
+// the OIDC discovery request to succeed.
 func whitelistMiddleware(whitelist []string, isReady *abool.AtomicBool) func(http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

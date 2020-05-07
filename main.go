@@ -27,22 +27,27 @@ const (
 	defaultHealthServerPort  = "8081"
 	defaultServerHostname    = ""
 	defaultServerPort        = "8080"
+	defaultStaticServerPort  = "8082"
 	defaultUserIDHeader      = "kubeflow-userid"
 	defaultUserIDTokenHeader = "kubeflow-userid-token"
 	defaultUserIDPrefix      = ""
 	defaultUserIDClaim       = "email"
 	defaultSessionMaxAge     = "86400"
+	defaultHomepageURL       = "/static/landing"
+	defaultAfterLogoutURL    = "/static/after_logout"
 )
 
 // Issue: https://github.com/gorilla/sessions/issues/200
 const secureCookieKeyPair = "notNeededBecauseCookieValueIsRandom"
 
 type server struct {
-	provider             *oidc.Provider
-	oauth2Config         *oauth2.Config
-	store                sessions.Store
-	staticDestination    string
-	sessionMaxAgeSeconds int
+	provider               *oidc.Provider
+	oauth2Config           *oauth2.Config
+	store                  sessions.Store
+	staticDestination      string
+	homepageURL            string
+	afterLogoutRedirectURL string
+	sessionMaxAgeSeconds   int
 	userIDOpts
 	caBundle []byte
 }
@@ -73,11 +78,14 @@ func main() {
 	caBundlePath := os.Getenv("CA_BUNDLE")
 	// OIDC Client
 	oidcScopes := clean(strings.Split(getEnvOrDie("OIDC_SCOPES"), " "))
+	clientName := getEnvOrDefault("CLIENT_NAME", "AuthService")
 	clientID := getEnvOrDie("CLIENT_ID")
 	clientSecret := getEnvOrDie("CLIENT_SECRET")
 	redirectURL := getURLEnvOrDie("REDIRECT_URL")
 	staticDestination := os.Getenv("STATIC_DESTINATION_URL")
 	whitelist := clean(strings.Split(os.Getenv("SKIP_AUTH_URI"), " "))
+	homepageURL := getEnvOrDefault("HOMEPAGE_URL", defaultHomepageURL)
+	afterLogoutRedirectURL := getEnvOrDefault("AFTER_LOGOUT_URL", defaultAfterLogoutURL)
 	// UserID Options
 	userIDHeader := getEnvOrDefault("USERID_HEADER", defaultUserIDHeader)
 	userIDTokenHeader := getEnvOrDefault("USERID_TOKEN_HEADER", defaultUserIDTokenHeader)
@@ -86,6 +94,9 @@ func main() {
 	// Server
 	hostname := getEnvOrDefault("SERVER_HOSTNAME", defaultServerHostname)
 	port := getEnvOrDefault("SERVER_PORT", defaultServerPort)
+	// Static Page Server
+	staticPageServerPort := getEnvOrDefault("STATIC_PAGE_SERVER_PORT", defaultStaticServerPort)
+	staticPageServerGitlabLogoutURL := os.Getenv("STATIC_PAGE_GITLAB_LOGOUT_URL")
 	// Store
 	storePath := getEnvOrDie("STORE_PATH")
 	// Sessions
@@ -101,17 +112,35 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/login/oidc", s.callback).Methods(http.MethodGet)
 	router.HandleFunc("/logout", s.logout).Methods(http.MethodGet)
-	router.PathPrefix("/").HandlerFunc(s.authenticate)
+
+	router.PathPrefix("/").Handler(whitelistMiddleware(whitelist, isReady)(http.HandlerFunc(s.authenticate)))
 
 	// Start server
 	log.Infof("Starting web server at %v:%v", hostname, port)
 	stopCh := make(chan struct{})
 	go func(stopCh chan struct{}) {
-		log.Fatal(http.ListenAndServe(hostname+":"+port, handlers.CORS()(whitelistMiddleware(whitelist, isReady)(router))))
+		log.Fatal(http.ListenAndServe(hostname+":"+port, handlers.CORS()(router)))
 		close(stopCh)
 	}(stopCh)
 
-	// Read CA bundle
+	// Start static page server
+	staticServer := StaticServer{
+		ClientName: clientName,
+	}
+	if staticPageServerGitlabLogoutURL != "" {
+		staticServer.GitlabConfig = &GitlabConfig{LogoutURL: staticPageServerGitlabLogoutURL}
+		if staticPageServerGitlabLogoutURL == "auto" {
+			logoutPath := mustParseURL("/users/sign_out")
+			staticServer.GitlabConfig.LogoutURL = providerURL.ResolveReference(logoutPath).String()
+		}
+	}
+	go staticServer.Start(hostname + ":" + staticPageServerPort)
+
+	/////////////////////////////////
+	// Resume setup asynchronously //
+	/////////////////////////////////
+
+	// Read custom CA bundle
 	var caBundle []byte
 	var err error
 	if caBundlePath != "" {
@@ -120,10 +149,6 @@ func main() {
 			log.Fatalf("Could not read CA bundle path %s: %v", caBundlePath, err)
 		}
 	}
-
-	/////////////////////////////////
-	// Resume setup asynchronously //
-	/////////////////////////////////
 
 	// OIDC Discovery
 	var provider *oidc.Provider
@@ -177,8 +202,10 @@ func main() {
 			Scopes:       oidcScopes,
 		},
 		// TODO: Add support for Redis
-		store:             store,
-		staticDestination: staticDestination,
+		store:                  store,
+		staticDestination:      staticDestination,
+		homepageURL:            homepageURL,
+		afterLogoutRedirectURL: afterLogoutRedirectURL,
 		userIDOpts: userIDOpts{
 			header:      userIDHeader,
 			tokenHeader: userIDTokenHeader,

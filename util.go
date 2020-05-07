@@ -105,6 +105,14 @@ func setTLSContext(ctx context.Context, caBundle []byte) context.Context {
 	return context.WithValue(ctx, oauth2.HTTPClient, tlsConf)
 }
 
+func mustParseURL(rawURL string) *url.URL {
+	url, err := url.Parse(rawURL)
+	if err != nil {
+		panic(err)
+	}
+	return url
+}
+
 func doRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
 	client := http.DefaultClient
 	if c, ok := ctx.Value(oauth2.HTTPClient).(*http.Client); ok {
