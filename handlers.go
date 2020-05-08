@@ -167,8 +167,8 @@ func (s *server) callback(w http.ResponseWriter, r *http.Request) {
 
 	// Getting original destination from DB with state
 	var destination = state.origURL
-	if s.staticDestination != "" {
-		destination = s.staticDestination
+	if s.afterLoginRedirectURL != "" {
+		destination = s.afterLoginRedirectURL
 	}
 
 	http.Redirect(w, r, destination, http.StatusFound)

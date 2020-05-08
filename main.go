@@ -44,7 +44,7 @@ type server struct {
 	provider               *oidc.Provider
 	oauth2Config           *oauth2.Config
 	store                  sessions.Store
-	staticDestination      string
+	afterLoginRedirectURL  string
 	homepageURL            string
 	afterLogoutRedirectURL string
 	sessionMaxAgeSeconds   int
@@ -82,7 +82,8 @@ func main() {
 	clientID := getEnvOrDie("CLIENT_ID")
 	clientSecret := getEnvOrDie("CLIENT_SECRET")
 	redirectURL := getURLEnvOrDie("REDIRECT_URL")
-	staticDestination := os.Getenv("STATIC_DESTINATION_URL")
+	afterLoginRedirectURL := getEnvOrDefault("AFTER_LOGIN_URL",
+		os.Getenv("STATIC_DESTINATION_URL"))
 	whitelist := clean(strings.Split(os.Getenv("SKIP_AUTH_URI"), " "))
 	homepageURL := getEnvOrDefault("HOMEPAGE_URL", defaultHomepageURL)
 	afterLogoutRedirectURL := getEnvOrDefault("AFTER_LOGOUT_URL", defaultAfterLogoutURL)
@@ -203,7 +204,7 @@ func main() {
 		},
 		// TODO: Add support for Redis
 		store:                  store,
-		staticDestination:      staticDestination,
+		afterLoginRedirectURL:  afterLoginRedirectURL,
 		homepageURL:            homepageURL,
 		afterLogoutRedirectURL: afterLogoutRedirectURL,
 		userIDOpts: userIDOpts{

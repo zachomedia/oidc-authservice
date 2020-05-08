@@ -41,6 +41,9 @@ Following environment variables are used by the software.
 * **CA_BUNDLE** Path to file containing custom CA certificates to use when connecting to an OIDC provider that uses self-signed certificates.
 * **HOMEPAGE_URL** Homepage to use when user logs out or accesses the callback URL without any query parameters.
   The authservice provides a default homepage, users can specify their own.
+* **AFTER_LOGIN_URL** URL to redirect the user to after they log in. Defaults to "".
+  * :warning: This option used to be called `STATIC_DESTINATION_URL`. For backwards compatibility, the
+    old environment variable is also checked.
 * **AFTER_LOGOUT_URL** URL to redirect the user to after they log out.
 
 **Platform-Specific**
