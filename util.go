@@ -40,10 +40,22 @@ func returnStatus(w http.ResponseWriter, statusCode int, errorMsg string) {
 func getEnvOrDefault(key, fallback string) string {
 	value, exists := os.LookupEnv(key)
 	if !exists {
-		log.Println("No ", key, " specified, using '"+fallback+"' as default.")
+		log.Infof("No envvar `%s' specified, using `%s' as default.", key, fallback)
 		return fallback
 	}
 	return value
+}
+
+func getBoolEnvOrDefault(key string, fallback bool) bool {
+	value, exists := os.LookupEnv(key)
+	if !exists {
+		log.Infof("No envvar `%s' specified, using `%v' as default.", key, fallback)
+		return fallback
+	}
+	if elemInSlice(value, []string{"on", "true"}) {
+		return true
+	}
+	return false
 }
 
 func getURLEnvOrDie(URLEnv string) *url.URL {
@@ -64,6 +76,15 @@ func getEnvOrDie(envVar string) string {
 	}
 
 	return envContent
+}
+
+func elemInSlice(elem string, slice []string) bool {
+	for _, s := range slice {
+		if strings.TrimSpace(strings.ToLower(s)) == strings.TrimSpace(strings.ToLower(elem)) {
+			return true
+		}
+	}
+	return false
 }
 
 func clean(s []string) []string {

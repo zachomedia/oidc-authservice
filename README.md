@@ -45,6 +45,11 @@ Following environment variables are used by the software.
   * :warning: This option used to be called `STATIC_DESTINATION_URL`. For backwards compatibility, the
     old environment variable is also checked.
 * **AFTER_LOGOUT_URL** URL to redirect the user to after they log out.
+* **STRICT_SESSION_VALIDATION** Be strict about session validity by quering the OIDC provider for the
+  validity of the token at each individual request, by hitting the userinfo endpoint. This ensures the
+  authservice can detect an OIDC token has been revoked on the OIDC provider immediately, and destroy
+  its own session. However, it may increase the load on the OIDC provider and introduces additional latency.
+  Disabled by default, enable with "on" OR "true".
 
 **Platform-Specific**
 * **STATIC_PAGE_GITLAB_LOGOUT_URL** URL to use for GitLab's static `after_logout` page.

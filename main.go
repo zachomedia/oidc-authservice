@@ -49,7 +49,8 @@ type server struct {
 	afterLogoutRedirectURL string
 	sessionMaxAgeSeconds   int
 	userIDOpts
-	caBundle []byte
+	caBundle                []byte
+	strictSessionValidation bool
 }
 
 type userIDOpts struct {
@@ -87,6 +88,7 @@ func main() {
 	whitelist := clean(strings.Split(os.Getenv("SKIP_AUTH_URI"), " "))
 	homepageURL := getEnvOrDefault("HOMEPAGE_URL", defaultHomepageURL)
 	afterLogoutRedirectURL := getEnvOrDefault("AFTER_LOGOUT_URL", defaultAfterLogoutURL)
+	strictSessionValidation := getBoolEnvOrDefault("STRICT_SESSION_VALIDATION", false)
 	// UserID Options
 	userIDHeader := getEnvOrDefault("USERID_HEADER", defaultUserIDHeader)
 	userIDTokenHeader := getEnvOrDefault("USERID_TOKEN_HEADER", defaultUserIDTokenHeader)
@@ -217,8 +219,9 @@ func main() {
 			prefix:      userIDPrefix,
 			claim:       userIDClaim,
 		},
-		sessionMaxAgeSeconds: sessionMaxAgeSeconds,
-		caBundle:             caBundle,
+		sessionMaxAgeSeconds:    sessionMaxAgeSeconds,
+		strictSessionValidation: strictSessionValidation,
+		caBundle:                caBundle,
 	}
 
 	// Setup complete, mark server ready
