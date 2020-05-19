@@ -1,3 +1,9 @@
+@font-face {
+  font-family: "Roboto";
+  src: url("./fonts/Roboto-Medium.woff") format("woff");
+  font-weight: 500;
+}
+
 html {
   box-sizing: border-box;
 }
@@ -28,7 +34,6 @@ body {
 }
 
 .main {
-  flex: 1 1 auto;
   background-position-x: center;
   background-position-y: center;
   background-size: cover;
@@ -37,13 +42,12 @@ body {
   background-attachment: fixed;
   background-origin: initial;
   background-clip: initial;
-  background-color: #a1c3ff;
   -webkit-background-size: cover;
   -moz-background-size: cover;
   -o-background-size: cover;
   background-size: cover;
-  background-color: #a1c3ff;
 
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -61,17 +65,15 @@ body {
   margin: 32px 96px 64px 96px;
 }
 
-form {
-  text-align: right;
-}
-
 .button {
-  border-radius: 4px;
   font-size: 14px;
   line-height: 1.143;
   padding: 10px 15px;
-  background-color: #0028aa;
   border: none;
   color: #fff;
   cursor: pointer;
+}
+
+.uppercase {
+  text-transform: uppercase;
 }

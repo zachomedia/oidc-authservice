@@ -1,17 +1,30 @@
 <!DOCTYPE html>
 <html>
-<head>
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-	<title>OIDC AuthService</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <title>OIDC AuthService</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<body class="theme-body">
-You have logged out from {{.ClientName}}!
-Close this window or login again!
-<form action="/" method="get" target="_self">
-	<input type="submit" value="Login">
-</form>
-</body>
+    <link href="../static/common.css" rel="stylesheet" />
+    <link href="../themes/ekf/styles.css" rel="stylesheet" />
+  </head>
+
+  <body>
+    <div class="wrapper">
+      <header class="header">
+        <img src="../themes/ekf/logo.svg" />
+      </header>
+      <main class="main" style="background-image:url(../themes/ekf/bg.svg);">
+        <div class="box">
+          <div class="box-content">
+            You have successfully logged out from {{.ClientName}}
+          </div>
+          <form class="button-wrapper" action="/" method="get" target="_self">
+            <input class="button uppercase" type="submit" value="Log in" />
+          </form>
+        </div>
+      </main>
+    </div>
+  </body>
 </html>
