@@ -68,6 +68,18 @@ func getURLEnvOrDie(URLEnv string) *url.URL {
 	return parsedURL
 }
 
+func getBoolEnvOrDefault(env string, fallback bool) bool {
+	val := os.Getenv(env)
+	val = strings.TrimSpace(strings.ToLower(val))
+	if val == "on" || val == "true" {
+		return true
+	}
+	if val == "off" || val == "false" {
+		return false
+	}
+	return fallback
+}
+
 func getEnvOrDie(envVar string) string {
 	envContent := os.Getenv(envVar)
 

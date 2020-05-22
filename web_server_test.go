@@ -11,7 +11,7 @@ func TestWebServerDefault(t *testing.T) {
 		TemplatePaths: []string{"web/templates/default"},
 		Frontend: map[string]string{
 			"CLIENT_NAME": "AuthService",
-			"THEME":       "ekf",
+			"THEME":       "kubeflow",
 		},
 		ProviderURL: "http://example.test",
 	}
@@ -21,15 +21,15 @@ func TestWebServerDefault(t *testing.T) {
 	}()
 	time.Sleep(3 * time.Second)
 	baseURL := mustParseURL("http://localhost:8082")
-	landing := baseURL.ResolveReference(mustParseURL("/site/landing"))
+	homepage := baseURL.ResolveReference(mustParseURL("/site/homepage"))
 	afterLogout := baseURL.ResolveReference(mustParseURL("/site/after_logout"))
-	image := baseURL.ResolveReference(mustParseURL("/site/assets/themes/ekf/bg.svg"))
+	image := baseURL.ResolveReference(mustParseURL("/site/assets/themes/kubeflow/bg.svg"))
 
 	tests := []struct {
 		name string
 		url  string
 	}{
-		{name: "landing", url: landing.String()},
+		{name: "homepage", url: homepage.String()},
 		{name: "afterLogout", url: afterLogout.String()},
 		{name: "image", url: image.String()},
 	}

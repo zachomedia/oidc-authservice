@@ -17,6 +17,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -90,15 +91,24 @@ func main() {
 	// Server
 	hostname := getEnvOrDefault("SERVER_HOSTNAME", defaultServerHostname)
 	port := getEnvOrDefault("SERVER_PORT", defaultServerPort)
-	homepageURL := getEnvOrDefault("HOMEPAGE_URL", LandingPath)
-	afterLogoutRedirectURL := getEnvOrDefault("AFTER_LOGOUT_URL", AfterLogoutPath)
 
 	// Web Server
 	webServerPort := getEnvOrDefault("WEB_SERVER_PORT", defaultWebServerPort)
-	webServerTemplatePaths := clean(strings.Split(os.Getenv("TEMPLATE_PATH"), ","))
-	webServerTheme := getEnvOrDefault("WEB_SERVER_THEME", "ekf")
-	webServerClientName := getEnvOrDefault("WEB_SERVER_CLIENT_NAME", "AuthService")
+	webServerTemplatePaths := clean(strings.Split(os.Getenv("WEB_SERVER_TEMPLATE_PATH"), ","))
+	webServerTheme := getEnvOrDefault("WEB_SERVER_THEME", "kubeflow")
+	webServerClientName := getEnvOrDefault("WEB_SERVER_CLIENT_NAME", "Kubeflow")
 	webServerTemplateValues := getEnvsFromPrefix("TEMPLATE_CONTEXT_")
+	webServerURLPrefix := getEnvOrDefault("WEB_SERVER_URL_PREFIX", "/authservice/")
+	webServerProtectEndpoint := getBoolEnvOrDefault("WEB_SERVER_PROTECT_URL_PREFIX", true)
+
+	homepageURL := getEnvOrDefault("HOMEPAGE_URL",
+		filepath.Join(webServerURLPrefix, HomepagePath))
+	afterLogoutRedirectURL := getEnvOrDefault("AFTER_LOGOUT_URL",
+		filepath.Join(webServerURLPrefix, AfterLogoutPath))
+
+	if webServerProtectEndpoint {
+		whitelist = append(whitelist, webServerURLPrefix)
+	}
 
 	// Store
 	storePath := getEnvOrDie("STORE_PATH")

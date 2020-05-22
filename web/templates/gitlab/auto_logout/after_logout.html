@@ -39,8 +39,6 @@
         req.withCredentials = true;
         setTimeout(
             () => {
-                msg = document.getElementById("logout_message");
-                msg.innerText = "Logout from GitLab complete, please close this window."
                 window.location.replace("{{ .ProviderURL }}");
             },
 			3000

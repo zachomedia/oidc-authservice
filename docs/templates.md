@@ -1,6 +1,6 @@
 # Templates
 
-The AuthService starts a web server for a couple of helper pages (`landing`,
+The AuthService starts a web server for a couple of helper pages (`homepage`,
 `after_logout`). These pages are rendered using HTML templating.
 
 ## Override templates
@@ -11,13 +11,13 @@ The file structure for the HTML templates is the following:
 web
 |---- templates
       |---- default
-            |----landing.html
+            |----homepage.html
             |----after_logout.html
 ```
 
-You can override any predefined template using the `TEMPLATE_PATH` environment
+You can override any predefined template using the `WEB_SERVER_TEMPLATE_PATH` environment
 variable. The `TEMPLATE_PATH` setting defines a list of directories to look into
-for templates (files ending in `.html`). Templates found in the `TEMPLATE_PATH`
+for templates (files ending in `.html`). Templates found in the `WEB_SERVER_TEMPLATE_PATH`
 will be loaded and templates with the same name as the existing templates will
 override them.
 
@@ -28,8 +28,8 @@ GitLab's logout URL.
 
 1. We create our own template for the page and name it `after_logout.html`.
 1. We place this template in a folder named `gitlab`.
-1. We set the `TEMPLATE_PATH` to point to that folder:
-   `TEMPLATE_PATH=/path/to/gitlab`.
+1. We set the `WEB_SERVER_TEMPLATE_PATH` to point to that folder:
+   `WEB_SERVER_TEMPLATE_PATH=/path/to/gitlab`.
 1. The AuthService starts and our template overrides the default
    `after_logout.html` template.
 
@@ -39,7 +39,7 @@ Here is what the final result could look like:
 web
 |---- templates
       |---- default
-            |---- landing.html
+            |---- homepage.html
             |---- after_logout.html
       |---- gitlab
             |---- after_logout.html
@@ -90,12 +90,12 @@ this case, a theme is a set of different images to use plus different CSS.
 
 #### How it works
 
-The default landing page template has two themes available, `ekf` and `rok`.
+The default homepage page template has two themes available, `kubeflow` and `rok`.
 Here is how they look side-by-side:
 
-| Rok Theme | EKF Theme |
+| Rok Theme | Kubeflow Theme |
 | --------- | --------- |
-| ![rok_theme](media/rok_theme.png) | ![ekf_theme](media/ekf_theme.png) |
+| ![rok_theme](media/rok_theme.png) | ![kubeflow_theme](media/kubeflow_theme.png) |
 
 We can see that the page structure is very much the same, but we have a
 different background image, logo and styling. Here is what the template looks
@@ -141,7 +141,7 @@ web
                   |---- bg.svg
                   |---- logo.svg
                   |---- styles.css
-            |---- ekf
+            |---- kubeflow
                   |---- bg.svg
                   |---- logo.svg
                   |---- styles.css

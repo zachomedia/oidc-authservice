@@ -11,12 +11,12 @@ import (
 )
 
 const (
-	tmplLanding     = "landing.html"
+	tmplLanding     = "homepage.html"
 	tmplAfterLogout = "after_logout.html"
 )
 
 var (
-	LandingPath     = "/site/landing"
+	HomepagePath    = "/site/homepage"
 	AfterLogoutPath = "/site/after_logout"
 	AssetsPath      = "/site/assets"
 )
@@ -70,7 +70,7 @@ func (s *WebServer) Start(addr string) error {
 		Theme:       s.Theme,
 		ClientName:  s.ClientName,
 	}
-	router.HandleFunc(LandingPath, siteHandler(templates.Lookup(tmplLanding), data)).Methods(http.MethodGet)
+	router.HandleFunc(HomepagePath, siteHandler(templates.Lookup(tmplLanding), data)).Methods(http.MethodGet)
 	router.HandleFunc(AfterLogoutPath, siteHandler(templates.Lookup(tmplAfterLogout), data)).Methods(http.MethodGet)
 
 	// Assets

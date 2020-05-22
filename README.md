@@ -39,7 +39,7 @@ Following environment variables are used by the software.
   **WARNING:** Make sure that the path in SKIP_AUTH_URI matches the path in the VirtualService definition of your Service Mesh. If it doesn't (eg you whitelist /dex and you match /dex/ in the VirtualService) you could leave resources exposed! (in this example, the /dex path is exposed)
 * **CA_BUNDLE** Path to file containing custom CA certificates to use when connecting to an OIDC provider that uses self-signed certificates.
 * **HOMEPAGE_URL** Homepage to use when user logs out or accesses the callback URL without any query parameters.
-  The authservice provides a default homepage, users can specify their own.
+  The AuthService provides a default homepage, users can specify their own.
 * **AFTER_LOGIN_URL** URL to redirect the user to after they log in. Defaults to "".
   * :warning: This option used to be called `STATIC_DESTINATION_URL`. For backwards compatibility, the
     old environment variable is also checked.
@@ -52,7 +52,7 @@ learn more about how these pages work, see [the templating guide](docs/templates
 By default, this web server is served at port `8082` and its endpoints are:
 | Endpoint | Description |
 | - | - |
-| `/site/landing` | Landing page |
+| `/site/homepage` | Landing page |
 | `/site/after_logout` | After Logout page |
 | `/site/assets/{themes, common}` | Static assets (CSS, image files) |
 
@@ -67,7 +67,16 @@ The settings available for this web server are:
 * **WEB_SERVER_CLIENT_NAME** A human-readable name for the client. Used
   in the web server's pages. Defaults to `AuthService`.
 * **WEB_SERVER_THEME** Theme to use for the web server.
-  Available options: `rok`, `ekf`.
+  Available options: `rok`, `kubeflow`.
+* **WEB_SERVER_URL_PREFIX** Defaults to `/authservice/`. The URL prefix under
+  which the admin has allocated for the AuthService web server. For example,
+  this `prefix` match setting in an Istio VirtualService. The AuthService needs
+  to know where it's served, so it can compute correct values for the default
+  `HOMEPAGE_URL` and `AFTER_LOGOUT_URL`.
+    * `HOMEPAGE_URL` defaults to `$WEB_SERVER_URL_PREFIX/site/homepage`
+    * `AFTER_LOGOUT_URL` defaults to `$WEB_SERVER_URL_PREFIX/site/after_logout`
+    * `WEB_SERVER_URL_PREFIX` is added to the `SKIP_AUTH_URI` list. Controlled
+      by `WEB_SERVER_PROTECT_URL_PREFIX` (default `off`)
 
 OIDC-AuthService stores sessions and other state in a local file using BoltDB.
 Other stores will be added soon.
