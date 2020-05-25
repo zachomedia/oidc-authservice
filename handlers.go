@@ -36,7 +36,7 @@ func (s *server) authenticate(w http.ResponseWriter, r *http.Request) {
 	// Adding it to a cookie to treat both cases uniformly.
 	// This is also required by the gorilla/sessions package.
 	// TODO(yanniszark): change to standard 'Authorization: Bearer <value>' header
-	bearer := r.Header.Get("X-Auth-Token")
+	bearer := getBearerToken(r.Header.Get(s.authHeader))
 	if bearer != "" {
 		r.AddCookie(&http.Cookie{
 			Name:   userSessionCookie,
@@ -154,6 +154,7 @@ func (s *server) callback(w http.ResponseWriter, r *http.Request) {
 	session := sessions.NewSession(s.store, userSessionCookie)
 	session.Options.MaxAge = s.sessionMaxAgeSeconds
 	session.Options.Path = "/"
+	session.Options.SameSite = http.SameSiteStrictMode
 
 	session.Values[userSessionUserID] = claims[s.userIDOpts.claim].(string)
 	session.Values[userSessionClaims] = claims
@@ -180,15 +181,28 @@ func (s *server) logout(w http.ResponseWriter, r *http.Request) {
 	logger := loggerForRequest(r)
 
 	// Revoke user session.
+	// Clear cookies to avoid using a browser-sent cookie for authentication.
+	// This is required by the gorilla/sessions package, which only
+	// supports retrieving sessions from requests (and not by a session id).
+	r.Header.Set("Cookie", "")
+	bearer := getBearerToken(r.Header.Get(s.authHeader))
+	if bearer != "" {
+		r.AddCookie(&http.Cookie{
+			Name:   userSessionCookie,
+			Value:  bearer,
+			Path:   "/",
+			MaxAge: 1,
+		})
+	}
 	session, err := s.store.Get(r, userSessionCookie)
 	if err != nil {
 		logger.Errorf("Couldn't get user session: %v", err)
-		http.Redirect(w, r, s.afterLogoutRedirectURL, http.StatusSeeOther)
+		returnStatus(w, http.StatusInternalServerError, "")
 		return
 	}
 	if session.IsNew {
 		logger.Warn("Request doesn't have a valid session.")
-		http.Redirect(w, r, s.afterLogoutRedirectURL, http.StatusSeeOther)
+		returnStatus(w, http.StatusUnauthorized, "")
 		return
 	}
 
@@ -220,7 +234,12 @@ func (s *server) logout(w http.ResponseWriter, r *http.Request) {
 		logger.Errorf("Couldn't delete user session: %v", err)
 	}
 	logger.Info("Successful logout.")
-	http.Redirect(w, r, s.afterLogoutRedirectURL, http.StatusSeeOther)
+	logoutResponse := struct {
+		AfterLogoutURL string `json:"afterLogoutURL"`
+	}{
+		AfterLogoutURL: s.afterLogoutRedirectURL,
+	}
+	returnStatusWithJSON(w, http.StatusCreated, logoutResponse)
 }
 
 // readiness is the handler that checks if the authservice is ready for serving

@@ -46,6 +46,8 @@ type server struct {
 	afterLoginRedirectURL  string
 	homepageURL            string
 	afterLogoutRedirectURL string
+	authHeader             string
+	staticDestination      string
 	sessionMaxAgeSeconds   int
 	userIDOpts
 	caBundle []byte
@@ -115,6 +117,8 @@ func main() {
 	storePath := getEnvOrDie("STORE_PATH")
 	// Sessions
 	sessionMaxAge := getEnvOrDefault("SESSION_MAX_AGE", defaultSessionMaxAge)
+	// Authentication
+	authHeader := getEnvOrDefault("AUTH_HEADER", "X-Auth-Token")
 
 	/////////////////////////////////////////////////////
 	// Start server immediately for whitelisted routes //
@@ -125,7 +129,7 @@ func main() {
 	// Register handlers for routes
 	router := mux.NewRouter()
 	router.HandleFunc("/login/oidc", s.callback).Methods(http.MethodGet)
-	router.HandleFunc("/logout", s.logout).Methods(http.MethodGet)
+	router.HandleFunc("/logout", s.logout).Methods(http.MethodPost)
 
 	router.PathPrefix("/").Handler(whitelistMiddleware(whitelist, isReady)(http.HandlerFunc(s.authenticate)))
 
@@ -217,6 +221,7 @@ func main() {
 			RedirectURL:  redirectURL.String(),
 			Scopes:       oidcScopes,
 		},
+		authHeader: authHeader,
 		// TODO: Add support for Redis
 		store:                  store,
 		afterLoginRedirectURL:  afterLoginRedirectURL,

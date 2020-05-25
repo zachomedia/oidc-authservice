@@ -94,6 +94,22 @@ Applications can then use those headers to identify the user.
 * **USERID_TOKEN_HEADER** The name of the header containing the id_token. (default `kubeflow-userid-token`).
 * **USERID_PREFIX** The prefix added to the userid, which will be the value of the header.
 
+
+### Authentication Methods
+
+The AuthService accepts credentials of the following form:
+
+### AuthService Sessions
+
+When the AuthService logs in a user, it creates a session for them and saves it
+in its database. The session secret value is saved in a cookie in the user's
+browser, named `authservice_session`.
+
+The AuthService will then accept credentials in two forms:
+1. The session cookie containing the secret value.
+2. A header (`AUTH_HEADER`) containing the session's secret value.
+
+
 ## Usage
 
 OIDC-Authservice is an OIDC Client, which authenticates users with an OIDC Provider and assigns them a session.

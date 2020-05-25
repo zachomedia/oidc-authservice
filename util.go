@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"math/rand"
@@ -15,6 +16,13 @@ import (
 	"os"
 	"strings"
 )
+
+func getBearerToken(value string) string {
+	if strings.HasPrefix(value, "Bearer ") {
+		return strings.TrimPrefix(value, "Bearer ")
+	}
+	return value
+}
 
 func loggerForRequest(r *http.Request) *log.Entry {
 	return log.WithContext(r.Context()).WithFields(log.Fields{
@@ -35,6 +43,18 @@ func getUserIP(r *http.Request) string {
 func returnStatus(w http.ResponseWriter, statusCode int, errorMsg string) {
 	w.WriteHeader(statusCode)
 	w.Write([]byte(errorMsg))
+}
+
+func returnStatusWithJSON(w http.ResponseWriter, statusCode int, body interface{}) {
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		log.Errorf("Error marshalling JSON response: %v", err)
+		returnStatus(w, http.StatusInternalServerError, "Error marshalling JSON response")
+		return
+	}
+	w.WriteHeader(statusCode)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(bodyBytes)
 }
 
 func getEnvsFromPrefix(prefix string) map[string]string {
