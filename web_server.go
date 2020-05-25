@@ -18,7 +18,7 @@ const (
 var (
 	HomepagePath    = "/site/homepage"
 	AfterLogoutPath = "/site/after_logout"
-	AssetsPath      = "/site/assets"
+	ThemesPath      = "/site/themes"
 )
 
 type WebServer struct {
@@ -26,7 +26,7 @@ type WebServer struct {
 	// Frontend-related values for context
 	ProviderURL string
 	ClientName  string
-	Theme       string
+	ThemeURL    string
 	Frontend    map[string]string
 }
 
@@ -62,12 +62,12 @@ func (s *WebServer) Start(addr string) error {
 		Frontend map[string]string
 		// OIDC-related settings
 		ProviderURL string
-		Theme       string
+		ThemeURL    string
 		ClientName  string
 	}{
 		Frontend:    s.Frontend,
 		ProviderURL: s.ProviderURL,
-		Theme:       s.Theme,
+		ThemeURL:    s.ThemeURL,
 		ClientName:  s.ClientName,
 	}
 	router.HandleFunc(HomepagePath, siteHandler(templates.Lookup(tmplLanding), data)).Methods(http.MethodGet)
@@ -75,11 +75,11 @@ func (s *WebServer) Start(addr string) error {
 
 	// Assets
 	router.
-		PathPrefix(AssetsPath).
+		PathPrefix(ThemesPath).
 		Handler(
 			http.StripPrefix(
-				AssetsPath,
-				http.FileServer(http.Dir("web/assets")),
+				ThemesPath,
+				http.FileServer(http.Dir("web/themes")),
 			),
 		)
 

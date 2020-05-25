@@ -3,9 +3,9 @@
   <body>
     <div class="wrapper">
       <header class="header">
-        <img src="assets/themes/{{ .Theme }}/logo.svg" />
+        <img src="{{ .ThemeURL }}/logo.svg" />
       </header>
-      <main class="main" style="background-image:url(assets/themes/{{ .Theme }}/bg.svg);">
+      <main class="main" style="background-image:url({{ .ThemeURL }}/bg.svg);">
         <div class="box">
           <div class="box-content">
             Welcome to {{ .ClientName }}

@@ -54,20 +54,25 @@ By default, this web server is served at port `8082` and its endpoints are:
 | - | - |
 | `/site/homepage` | Landing page |
 | `/site/after_logout` | After Logout page |
-| `/site/assets/{themes, common}` | Static assets (CSS, image files) |
+| `/site/themes` | Themes |
 
 To expose the web server in an environment like Kubernetes with Istio, you need to:
 - Create a Service pointing to the AuthService's web server port.
-- Create an Istio VirtualService to match `/site/` traffic and direct it to the Service you created.
-- Skip auth checks on `/site/` with the `SKIP_AUTH_URI` setting.
+- Set `WEB_SERVER_URL_PREFIX` to the path you want the AuthService site to live under.
+- Create an Istio VirtualService to match traffic with the `$WEB_SERVER_URL_PREFIX`
+   path-prefix and direct it to the Service you created.
 
 The settings available for this web server are:
 * **WEB_SERVER_TEMPLATE_PATH** A comma-separated list of dirs to look under for templates.
-  For more information, see [the templating guide](docs/templates.md).
+  Templates with the same name override previously registered ones. For more information,
+  see [the templating guide](docs/templates.md).
 * **WEB_SERVER_CLIENT_NAME** A human-readable name for the client. Used
   in the web server's pages. Defaults to `AuthService`.
-* **WEB_SERVER_THEME** Theme to use for the web server.
-  Available options: `rok`, `kubeflow`.
+* **WEB_SERVER_THEMES_URL** URL where the themes are served. The default value of this
+  setting is `themes`. Theme assets are found under `$WEB_SERVER_THEMES_URL/$WEB_SERVER_THEME`.
+  To learn how you can create your own theme, see [the templating guide](docs/templates.md).
+* **WEB_SERVER_THEME** Theme to use for the AuthService web server pages. Defaults
+  to `kubeflow`.
 * **WEB_SERVER_URL_PREFIX** Defaults to `/authservice/`. The URL prefix under
   which the admin has allocated for the AuthService web server. For example,
   this `prefix` match setting in an Istio VirtualService. The AuthService needs

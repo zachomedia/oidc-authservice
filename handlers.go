@@ -88,7 +88,7 @@ func (s *server) callback(w http.ResponseWriter, r *http.Request) {
 	// Get authorization code from authorization response.
 	var authCode = r.FormValue("code")
 	if len(authCode) == 0 {
-		logger.Warnf("Missing url parameter: code. Redirecting to homepagee `%s'.", s.homepageURL)
+		logger.Warnf("Missing url parameter: code. Redirecting to homepage `%s'.", s.homepageURL)
 		http.Redirect(w, r, s.homepageURL, http.StatusFound)
 		return
 	}

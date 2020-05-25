@@ -95,7 +95,6 @@ func main() {
 	// Web Server
 	webServerPort := getEnvOrDefault("WEB_SERVER_PORT", defaultWebServerPort)
 	webServerTemplatePaths := clean(strings.Split(os.Getenv("WEB_SERVER_TEMPLATE_PATH"), ","))
-	webServerTheme := getEnvOrDefault("WEB_SERVER_THEME", "kubeflow")
 	webServerClientName := getEnvOrDefault("WEB_SERVER_CLIENT_NAME", "Kubeflow")
 	webServerTemplateValues := getEnvsFromPrefix("TEMPLATE_CONTEXT_")
 	webServerURLPrefix := getEnvOrDefault("WEB_SERVER_URL_PREFIX", "/authservice/")
@@ -105,6 +104,8 @@ func main() {
 		filepath.Join(webServerURLPrefix, HomepagePath))
 	afterLogoutRedirectURL := getEnvOrDefault("AFTER_LOGOUT_URL",
 		filepath.Join(webServerURLPrefix, AfterLogoutPath))
+	webServerThemesURL := getEnvOrDefault("WEB_SERVER_THEMES_URL", "themes")
+	webServerTheme := getEnvOrDefault("WEB_SERVER_THEME", "kubeflow")
 
 	if webServerProtectEndpoint {
 		whitelist = append(whitelist, webServerURLPrefix)
@@ -137,11 +138,13 @@ func main() {
 	}(stopCh)
 
 	// Start web server
+	themeURL := mustParseURL(webServerThemesURL)
+	themeURL.Path = filepath.Join(themeURL.Path, webServerTheme)
 	webServer := WebServer{
 		TemplatePaths: append([]string{"web/templates/default"}, webServerTemplatePaths...),
 		ProviderURL:   providerURL.String(),
 		ClientName:    webServerClientName,
-		Theme:         webServerTheme,
+		ThemeURL:      themeURL.String(),
 		Frontend:      webServerTemplateValues,
 	}
 	log.Infof("Starting web server at %v:%v", hostname, webServerPort)
