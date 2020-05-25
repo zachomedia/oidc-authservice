@@ -16,7 +16,7 @@ web
 ```
 
 You can override any predefined template using the `WEB_SERVER_TEMPLATE_PATH` environment
-variable. The `TEMPLATE_PATH` setting defines a list of directories to look into
+variable. The `WEB_SERVER_TEMPLATE_PATH` setting defines a list of directories to look into
 for templates (files ending in `.html`). Templates found in the `WEB_SERVER_TEMPLATE_PATH`
 will be loaded and templates with the same name as the existing templates will
 override them.
@@ -46,7 +46,7 @@ web
 ```
 
 Incidentally, the AuthService ships with a GitLab template that can be activated
-by setting `TEMPLATE_PATH=/path/to/web/templates/gitlab`.
+by setting `WEB_SERVER_TEMPLATE_PATH=/path/to/web/templates/gitlab`.
 
 ## Writing a template
 
@@ -64,7 +64,7 @@ only at runtime.
 Currently, the following values are passed in each template's context:
 * `ProviderURL`: The URL of the OIDC Provider.
 * `ClientName`: A human-readable name for the OIDC Client.
-* `Theme`: Theme to use in frontend.
+* `ThemeURL`: URL where theme assets are served.
 
 In addition, the user can provide their own values through
 `TEMPLATE_CONTEXT_KEY=VALUE` environment variables. Those will be accessible in
@@ -90,15 +90,11 @@ this case, a theme is a set of different images to use plus different CSS.
 
 #### How it works
 
-The default homepage page template has two themes available, `kubeflow` and `rok`.
-Here is how they look side-by-side:
+The AuthService comes with an included `kubeflow` theme.
 
-| Rok Theme | Kubeflow Theme |
-| --------- | --------- |
-| ![rok_theme](media/rok_theme.png) | ![kubeflow_theme](media/kubeflow_theme.png) |
+ ![kubeflow_theme](media/kubeflow_theme.png)
 
-We can see that the page structure is very much the same, but we have a
-different background image, logo and styling. Here is what the template looks
+The `kubeflow` theme is customizing the page CSS and images. Here is what the template looks
 like:
 
 ```html
@@ -107,9 +103,9 @@ like:
 <body>
     <div class="wrapper">
       <header class="header">
-        <img src="assets/themes/{{ .Theme }}/logo.svg" />
+        <img src="{{ .ThemeURL }}/logo.svg" />
       </header>
-      <main class="main" style="background-image:url(assets/themes/{{ .Theme }}/bg.svg);">
+      <main class="main" style="background-image:url({{ .ThemeURL }}/bg.svg);">
         <div class="box">
           <div class="box-content">
             You have successfully logged out from {{.ClientName}}
@@ -127,25 +123,28 @@ like:
 
 We see that template will load a different image based on the theme chosen:
 ```html
-        <img src="assets/themes/{{ .Theme }}/logo.svg" />
+        <img src="{{ .ThemeURL }}/logo.svg" />
 ...
-      <main class="main" style="background-image:url(assets/themes/{{ .Theme }}/bg.svg);">
+      <main class="main" style="background-image:url({{ .ThemeURL }}/bg.svg);">
 ```
 
-Themes live under `web/assets/themes` and their structure is:
+Themes live under `web/themes` and their structure is:
 ```
 web
-|---- assets
-      |---- themes
-            |---- rok
-                  |---- bg.svg
-                  |---- logo.svg
-                  |---- styles.css
-            |---- kubeflow
-                  |---- bg.svg
-                  |---- logo.svg
-                  |---- styles.css
+|---- themes
+      |---- kubeflow
+            |---- bg.svg
+            |---- logo.svg
+            |---- styles.css
 ```
+
+To get the AuthService to use our theme, we have to change the `WEB_SERVER_THEME` and/or
+the `WEB_SERVER_THEMES_URL` setting.
+We can either:
+* Copy our theme inside the AuthService image (e.g., with a ConfigMap), under `web/themes` and
+  set the `WEB_SERVER_THEME` to `my_theme`.
+* Serve our theme from our own server, by setting `WEB_SERVER_THEMES_URL` to our server's URL
+  that is serving the theme and `WEB_SERVER_THEME` to the name of our theme.
 
 #### Theme-Compatible Templates
 
@@ -154,15 +153,20 @@ Back to our GitLab example from before, we will write our GitLab
 so, it should make use of the theme assets, like the default `after_logout.html`
 template.
 
+The current theme assets are:
+* The logo image, `logo.svg`.
+* The background image: `bg.svg`.
+* The stylesheet: `styles.css`.
+
 ```html
 {{ template "header.html" . }}
 
 <body>
     <div class="wrapper">
       <header class="header">
-        <img src="assets/themes/{{ .Theme }}/logo.svg" />
+        <img src="{{ .ThemeURL }}/logo.svg" />
       </header>
-      <main class="main" style="background-image:url(assets/themes/{{ .Theme }}/bg.svg);">
+      <main class="main" style="background-image:url({{ .ThemeURL }}/bg.svg);">
         <div class="box">
           <div class="box-content">
             You have successfully logged out from {{.ClientName}}
@@ -192,11 +196,11 @@ needed at the end.
 
 #### Custom Themes
 
-To write your own theme, consult the structure under `web/assets/themes`.
+To write your own theme, consult the structure under `web/themes/kubeflow`.
 Currently, the structure for a theme is the following, but it can be expanded in
 the future:
 ```
-rok
+kubeflow
 |---- bg.svg
 |---- logo.svg
 |---- styles.css

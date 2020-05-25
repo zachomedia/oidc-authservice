@@ -40,13 +40,15 @@ Following environment variables are used by the software.
 * **CA_BUNDLE** Path to file containing custom CA certificates to use when connecting to an OIDC provider that uses self-signed certificates.
 * **HOMEPAGE_URL** Homepage to use when user logs out or accesses the callback URL without any query parameters.
   The AuthService provides a default homepage, users can specify their own.
-* **AFTER_LOGIN_URL** URL to redirect the user to after they log in. Defaults to "".
+* **AFTER_LOGIN_URL** URL to redirect the user to after they log in. Defaults
+  to the originally visited URL.
   * :warning: This option used to be called `STATIC_DESTINATION_URL`. For backwards compatibility, the
     old environment variable is also checked.
-* **AFTER_LOGOUT_URL** URL to redirect the user to after they log out.
+* **AFTER_LOGOUT_URL** URL to redirect the user to after they log out. Defaults to
+  `$WEB_SERVER_URL_PREFIX/site/after_logout`.
 
-The AuthService provides a web server with some defaults pages for a homepage
-and an after_logout page. The following values are about these pages. To
+The AuthService provides a web server with some defaults pages for a `homepage`
+and an `after_logout` page. The following values are about these pages. To
 learn more about how these pages work, see [the templating guide](docs/templates.md).
 
 By default, this web server is served at port `8082` and its endpoints are:
@@ -54,20 +56,25 @@ By default, this web server is served at port `8082` and its endpoints are:
 | - | - |
 | `/site/homepage` | Landing page |
 | `/site/after_logout` | After Logout page |
-| `/site/assets/{themes, common}` | Static assets (CSS, image files) |
+| `/site/themes` | Themes |
 
 To expose the web server in an environment like Kubernetes with Istio, you need to:
 - Create a Service pointing to the AuthService's web server port.
-- Create an Istio VirtualService to match `/site/` traffic and direct it to the Service you created.
-- Skip auth checks on `/site/` with the `SKIP_AUTH_URI` setting.
+- Set `WEB_SERVER_URL_PREFIX` to the path you want the AuthService site to live under.
+- Create an Istio VirtualService to match traffic with the `$WEB_SERVER_URL_PREFIX`
+   path-prefix and direct it to the Service you created.
 
 The settings available for this web server are:
 * **WEB_SERVER_TEMPLATE_PATH** A comma-separated list of dirs to look under for templates.
-  For more information, see [the templating guide](docs/templates.md).
+  Templates with the same name override previously registered ones. For more information,
+  see [the templating guide](docs/templates.md).
 * **WEB_SERVER_CLIENT_NAME** A human-readable name for the client. Used
   in the web server's pages. Defaults to `AuthService`.
-* **WEB_SERVER_THEME** Theme to use for the web server.
-  Available options: `rok`, `kubeflow`.
+* **WEB_SERVER_THEMES_URL** URL where the themes are served. The default value of this
+  setting is `themes`. Theme assets are found under `$WEB_SERVER_THEMES_URL/$WEB_SERVER_THEME`.
+  To learn how you can create your own theme, see [the templating guide](docs/templates.md).
+* **WEB_SERVER_THEME** Theme to use for the AuthService web server pages. Defaults
+  to `kubeflow`.
 * **WEB_SERVER_URL_PREFIX** Defaults to `/authservice/`. The URL prefix under
   which the admin has allocated for the AuthService web server. For example,
   this `prefix` match setting in an Istio VirtualService. The AuthService needs

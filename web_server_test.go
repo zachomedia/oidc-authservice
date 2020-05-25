@@ -9,11 +9,10 @@ import (
 func TestWebServerDefault(t *testing.T) {
 	s := &WebServer{
 		TemplatePaths: []string{"web/templates/default"},
-		Frontend: map[string]string{
-			"CLIENT_NAME": "AuthService",
-			"THEME":       "kubeflow",
-		},
-		ProviderURL: "http://example.test",
+		ProviderURL:   "http://example.test",
+		ClientName:    "Kubeflow",
+		ThemeURL:      "themes/kubeflow",
+		Frontend:      map[string]string{},
 	}
 	// Start web server
 	go func() {
@@ -23,7 +22,7 @@ func TestWebServerDefault(t *testing.T) {
 	baseURL := mustParseURL("http://localhost:8082")
 	homepage := baseURL.ResolveReference(mustParseURL("/site/homepage"))
 	afterLogout := baseURL.ResolveReference(mustParseURL("/site/after_logout"))
-	image := baseURL.ResolveReference(mustParseURL("/site/assets/themes/kubeflow/bg.svg"))
+	image := baseURL.ResolveReference(mustParseURL("/site/themes/kubeflow/styles.css"))
 
 	tests := []struct {
 		name string
