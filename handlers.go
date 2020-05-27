@@ -4,13 +4,14 @@ package main
 
 import (
 	"encoding/gob"
+	"net/http"
+	"strings"
+
 	"github.com/coreos/go-oidc"
 	"github.com/gorilla/sessions"
 	"github.com/pkg/errors"
 	"github.com/tevino/abool"
 	"golang.org/x/oauth2"
-	"net/http"
-	"strings"
 )
 
 const (
@@ -77,7 +78,7 @@ func (s *server) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, s.oauth2Config.AuthCodeURL(id), http.StatusFound)
+	http.Redirect(w, r, s.oauth2Config.AuthCodeURL(id, oauth2.SetAuthURLParam("prompt", "select_account")), http.StatusFound)
 }
 
 // callback is the handler responsible for exchanging the auth_code and retrieving an id_token.
@@ -128,7 +129,7 @@ func (s *server) callback(w http.ResponseWriter, r *http.Request) {
 
 	// Verifying received ID token
 	verifier := s.provider.Verifier(&oidc.Config{ClientID: s.oauth2Config.ClientID})
-	_, err = verifier.Verify(ctx, rawIDToken)
+	idToken, err := verifier.Verify(r.Context(), rawIDToken)
 	if err != nil {
 		logger.Errorf("Not able to verify ID token: %v", err)
 		returnStatus(w, http.StatusInternalServerError, "Unable to verify ID token.")
@@ -137,14 +138,8 @@ func (s *server) callback(w http.ResponseWriter, r *http.Request) {
 
 	// UserInfo endpoint to get claims
 	claims := map[string]interface{}{}
-	userInfo, err := s.provider.UserInfo(ctx, oauth2.StaticTokenSource(oauth2Tokens))
-	if err != nil {
-		logger.Errorf("Not able to fetch userinfo: %v", err)
-		returnStatus(w, http.StatusInternalServerError, "Not able to fetch userinfo.")
-		return
-	}
 
-	if err = userInfo.Claims(&claims); err != nil {
+	if err = idToken.Claims(&claims); err != nil {
 		logger.Println("Problem getting userinfo claims:", err.Error())
 		returnStatus(w, http.StatusInternalServerError, "Not able to fetch userinfo claims.")
 		return
