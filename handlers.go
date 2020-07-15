@@ -29,6 +29,14 @@ func init() {
 	gob.Register(oidc.IDToken{})
 }
 
+func getBearerToken(value string) string {
+	value = strings.TrimSpace(value)
+	if strings.HasPrefix(value, "Bearer ") {
+		return strings.TrimPrefix(value, "Bearer ")
+	}
+	return value
+}
+
 func (s *server) authenticate(w http.ResponseWriter, r *http.Request) {
 
 	logger := loggerForRequest(r)
@@ -37,14 +45,55 @@ func (s *server) authenticate(w http.ResponseWriter, r *http.Request) {
 	// Adding it to a cookie to treat both cases uniformly.
 	// This is also required by the gorilla/sessions package.
 	// TODO(yanniszark): change to standard 'Authorization: Bearer <value>' header
-	bearer := r.Header.Get("X-Auth-Token")
-	if bearer != "" {
-		r.AddCookie(&http.Cookie{
-			Name:   userSessionCookie,
-			Value:  bearer,
-			Path:   "/",
-			MaxAge: 1,
-		})
+	bearer := getBearerToken(r.Header.Get("Authorization"))
+	if len(bearer) != 0 {
+
+		// 1. Verify the incoming token (ensure it's issued to us)
+		verifier := s.provider.Verifier(&oidc.Config{ClientID: s.oauth2Config.ClientID})
+		idToken, err := verifier.Verify(r.Context(), bearer)
+		if err != nil {
+			logger.Errorf("Not able to verify ID token: %v", err)
+			returnStatus(w, http.StatusInternalServerError, "Unable to verify ID token.")
+			return
+		}
+
+		// 2. Decode the token and get the claims
+		claims := map[string]interface{}{}
+
+		if err = idToken.Claims(&claims); err != nil {
+			logger.Println("Problem getting userinfo claims:", err.Error())
+			returnStatus(w, http.StatusInternalServerError, "Not able to fetch userinfo claims.")
+			return
+		}
+
+		userID := ""
+		if value, ok := claims[s.userIDOpts.claim]; ok {
+			userID = value.(string)
+		} else {
+			logger.Println("UserID claim was not specified... falling back to sub")
+
+			// We didn't get a UserID, but since this is probably
+			// a service account, let's just use the subject for now.
+			if value, ok := claims["sub"]; ok {
+				userID = value.(string)
+			} else {
+				logger.Println("Unable to identify user")
+				returnStatus(w, http.StatusInternalServerError, "Not able to identify user.")
+				return
+			}
+		}
+
+		// 3. Set the userID header
+		if userID != "" {
+			w.Header().Set(s.userIDOpts.header, s.userIDOpts.prefix+userID)
+		}
+		if s.userIDOpts.tokenHeader != "" {
+			w.Header().Set(s.userIDOpts.tokenHeader, bearer)
+		}
+
+		// 4. Return HTTP OK
+		returnStatus(w, http.StatusOK, "OK")
+		return
 	}
 
 	// Check if user session is valid
