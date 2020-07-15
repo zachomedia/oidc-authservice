@@ -19,7 +19,7 @@ build:
 docker-build:
 	docker build -t $(IMG):$(TAG) .
 
-docker-push:
+docker-push: docker-build
 	docker push $(IMG):$(TAG)
 
 bin/plantuml.jar:
