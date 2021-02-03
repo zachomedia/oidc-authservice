@@ -198,6 +198,8 @@ func (s *server) callback(w http.ResponseWriter, r *http.Request) {
 	session := sessions.NewSession(s.store, userSessionCookie)
 	session.Options.MaxAge = s.sessionMaxAgeSeconds
 	session.Options.Path = "/"
+	session.Options.Secure = true
+	session.Options.HttpOnly = true
 
 	session.Values[userSessionUserID] = claims[s.userIDOpts.claim].(string)
 	session.Values[userSessionClaims] = claims
